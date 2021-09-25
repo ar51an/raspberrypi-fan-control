@@ -105,7 +105,7 @@ The Green tachometer wire on Noctua fan is used to calculate RPM. I wrote the co
 ### Points to Note
 * Fan will run at full speed when RP4 is booted. After few seconds when fan-control will be loaded **either** it will switch off **or** adjusts its speed, depending on CPU temperature.
 
-* Fan-control service runs the fan at the temperature range of `48–58°C`. This is optimal range in my environment. Feel free to change the range according to your desired value and rebuild the binary. Noctua fan's recommeded minimum RPM is 1000. I kept the minimum RPM at 1500 in this service. Table below explains the fan's operation:
+* Fan-control service runs the fan within the temperature range from `48–58°C` and above. This is optimal range in my environment. Feel free to change the range according to your desired value and rebuild the binary. Noctua fan's recommeded minimum RPM is 1000. I kept the minimum RPM at 1500 in this service. Table below explains the fan's operation:
 
   |`Temp`|`RPM`|
   |:---|:---|
