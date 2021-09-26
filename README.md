@@ -66,7 +66,7 @@ The Green tachometer wire on Noctua fan is used to calculate RPM. I wrote the co
   > Unzip `sudo unzip -o WiringPi-master.zip -d WiringPi`  
   > Build and Install `sudo ./build`  
 
-* Install `libsystemd-dev` package. This is needed for logging to `systemd journal`. This program prints to the journal at startup, exit and when fan is on (at 10 seconds interval). You can change the `log level` if you want to reduce logging. If you **do not** want journal logging at all from this fan-control code you can skip `libsystemd-dev` package installation and remove journal logging from code, explained in the `Build` section below.
+* Install `libsystemd-dev` package. This is needed for logging to `systemd journal`. This program prints to the journal at startup, exit and when fan is on (at 5 seconds interval). You can change the `log level` if you want to reduce logging. If you **do not** want journal logging at all from this fan-control code you can skip `libsystemd-dev` package installation and remove journal logging from code, explained in the `Build` section below.
 
   > **Install Package:**  
   > `sudo apt install libsystemd-dev`  
