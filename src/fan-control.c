@@ -12,9 +12,6 @@
 #include <wiringPi.h>
 #include <systemd/sd-journal.h>
 
-#define	LOG_ERR		3
-#define	LOG_WARN	4
-#define	LOG_INFO	6
 const int PWM_PIN     = 18;    // HW PWM works at GPIO 12, 13, 18 & 19 on RPi4B
 const int TACHO_PIN   = 23;
 const int RPM_MAX     = 5000;  // Noctua Specs: Max=5000
@@ -114,7 +111,7 @@ void setFanRpm () {
         rpm = (int) (currTempDiffPct*RPM_MAX)/100;
         rpm = rpm < RPM_MIN ? RPM_MIN : rpm > RPM_MAX ? RPM_MAX : rpm;
         //printf("\e[30;38;5;139m » PWM-PIN › Temp: %d | TempDiff: %.1f% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
-        sd_journal_print(LOG_INFO, "PWM-PIN › Temp: %d | TempDiff: %.1f% | RPM: %d", currTemp, currTempDiffPct, rpm);
+        sd_journal_print(LOG_DEBUG, "PWM-PIN › Temp: %d | TempDiff: %.1f% | RPM: %d", currTemp, currTempDiffPct, rpm);
     }
     setFanSpeed(PWM_PIN, rpm);
     return;
