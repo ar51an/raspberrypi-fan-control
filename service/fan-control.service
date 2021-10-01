@@ -1,5 +1,5 @@
 [Unit]
-Description=Fan Controller Service
+Description=Fan Speed Control Service
 Before=sysinit.target
 After=local-fs.target
 DefaultDependencies=no
