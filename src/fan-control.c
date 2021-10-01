@@ -132,19 +132,19 @@ void cleanup () {
     // TACHO pin cleanup
     //pullUpDnControl(TACHO_PIN, PUD_DOWN);
     //pinMode(TACHO_PIN, origTachoPinMode);
-    //printf("\e[30;38;5;74m » Cleaned up, exiting ...\n\e[0m");
-    sd_journal_print(LOG_INFO, "» Cleaned up, exiting ...");
+    //printf("\e[30;38;5;74m » Cleaned up - Exiting ...\n\e[0m");
+    sd_journal_print(LOG_INFO, "» Cleaned up - Exiting ...");
     return;
 }
 
 int main (void)
 {
-    //printf("\e[30;38;5;74m » PWM fan controller started ...\n\e[0m");
-    sd_journal_print(LOG_INFO, "» PWM fan controller started ...");
     signal(SIGINT, signalHandler);
     initWiringPi();
     setupPwm();
     //setupTacho();
+    //printf("\e[30;38;5;74m » Initialized and running ...\n\e[0m");
+    sd_journal_print(LOG_INFO, "» Initialized and running ...");
     while (keepRunning)	{
         setFanRpm();
         //getFanRpm();
