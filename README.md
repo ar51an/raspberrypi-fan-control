@@ -24,7 +24,7 @@ I connected Noctua fan's 3 wires directly to the RP4 GPIO pins. It is been over 
 #### Specs:
 > • Noctua NF-A4x10 5V PWM Fan  
 > • Raspberry Pi 4 Model B  
-> • raspios-buster-arm64-lite  
+> • raspios-bullseye-arm64-lite  
 > • WiringPi C Library
 #
 
@@ -120,7 +120,7 @@ The Green tachometer wire on Noctua fan is used to calculate RPM. I wrote the co
 ### Build
 * Binaries are available under repo folder `build`. It was built on `raspios-buster-arm64-lite` OS. If for any reason you want to rebuild.  
   > **Build command:**  
-  > `sudo gcc -lsystemd -lwiringPi fan-control.c -o fan-control`  
+  > `sudo gcc fan-control.c -o fan-control -lwiringPi -lsystemd`  
 
 * Test binary after build.  
   > **Run binary:**  
@@ -129,4 +129,4 @@ The Green tachometer wire on Noctua fan is used to calculate RPM. I wrote the co
 
 * If you are not interested in journal logging. Comment out the include header `sd-journal.h` and journal logging lines starting with `sd_journal_print`  
   > **Build command without journal logging:**  
-  > `sudo gcc -lwiringPi fan-control.c -o fan-control`  
+  > `sudo gcc fan-control.c -o fan-control -lwiringPi`  
