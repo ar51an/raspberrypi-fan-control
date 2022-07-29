@@ -1,8 +1,8 @@
 /*
  * PWM Fan Controller:
  *   PWM fan controller is developed using WiringPi C library for RPi4. It is
- *   intended for "Noctua NF-A4x10 5V PWM" fan, but it may work for any PWM
- *   fan with slight adjustment according to the fan specs.
+ *   intended for "Noctua NF-A4x10 5V PWM" fan, it may work for any PWM fan
+ *   with slight adjustment according to the fan specs.
  *   Copyright (c) 2021 - ar51an
  */
 
@@ -12,21 +12,39 @@
 #include <wiringPi.h>
 #include <systemd/sd-journal.h>
 
-const int PWM_PIN     = 18;    // HW PWM works at GPIO 12, 13, 18 & 19 on RPi4B
-const int TACHO_PIN   = 23;
-const int RPM_MAX     = 5000;  // Noctua Specs: Max=5000
-const int RPM_MIN     = 1500;  // Noctua Specs: Min=1000. I used 1500 as Min
-const int RPM_OFF     = 0;
-const int TEMP_MAX    = 58;    // Above this temperature, FAN=ON » Max speed
-const int TEMP_LOW    = 48;    // Below this temperature, FAN=OFF
-const int WAIT        = 5000;  // MilliSecs before adjusting RPM
-const int PULSE       = 2;     // TACHO_PIN - Noctua fan puts out 2 pluses per revolution
-volatile int intCount = 0;     // TACHO_PIN - Interrupt Counter
-int getRpmStartTime   = 0;     // TACHO_PIN
-int origPwmPinMode    = -1;
-int origTachoPinMode  = -1;
+int PWM_PIN				= 18;	// HW PWM works at GPIO [12, 13, 18 & 19] on RPi4B
+int TACHO_PIN			= 23;
+int RPM_MAX				= 5000;	// Noctua Specs: Max=5000
+int RPM_MIN				= 1500;	// Noctua Specs: Min=1000 [Kept 1500 as Min]
+int RPM_OFF				= 0;
+int TEMP_MAX			= 55;	// Above this temperature [FAN=ON At Max speed]
+int TEMP_LOW			= 40;	// Below this temperature [FAN=OFF]
+int WAIT				= 5000;	// MilliSecs before adjusting RPM
+const int PULSE			= 2;	// TACHO_PIN Specific [Noctua fan puts out 2 pulses per revolution]
+volatile int intCount	= 0;	// TACHO_PIN Specific [Interrupt Counter]
+int getRpmStartTime		= 0;	// TACHO_PIN Specific
+int origPwmPinMode		= -1;
+int origTachoPinMode	= -1;
+float tempLimitDiffPct	= 0.0f;
+char thermalFilename[]	= "/sys/class/thermal/thermal_zone0/temp";
+const char confFormat[]	= "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d "
+						  "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s\n";
 static volatile sig_atomic_t keepRunning = 1;
-const float tempLimitDiffPct = (float) (TEMP_MAX-TEMP_LOW)/100;
+
+void initFanControl () {
+	/* Assign global vars with config file (if provided) values */
+    FILE *confFile;
+    confFile = fopen("params.conf", "r");
+	if (confFile != NULL ) {
+		fscanf(confFile, confFormat, &PWM_PIN, &TACHO_PIN, &RPM_MAX, &RPM_MIN, \
+				&RPM_OFF, &TEMP_MAX, &TEMP_LOW, &WAIT, thermalFilename);
+		/*printf(confFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, RPM_OFF, \
+				TEMP_MAX, TEMP_LOW, WAIT, thermalFilename);*/
+		fclose(confFile);
+	}
+	/* Calculate values of global vars */
+	tempLimitDiffPct = (float) (TEMP_MAX-TEMP_LOW)/100;
+}
 
 void initWiringPi () {
     /* Initialize wiringPi, calling 1 of 4 setup methods */
@@ -46,9 +64,9 @@ int getCurrTemp () {
     int currTemp = 0;
     float currTempF = 0;
     FILE *thermalFile;
-    thermalFile = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
-    fscanf (thermalFile, "%f", &currTempF);
-    fclose (thermalFile);
+    thermalFile = fopen(thermalFilename, "r");
+    fscanf(thermalFile, "%f", &currTempF);
+    fclose(thermalFile);
     currTempF = currTempF/1000;
     currTemp = (int) (currTempF + 0.5);
     //printf("CurrTempF: %f, CurrTempI Rounded: %d\n", currTempF, currTemp);
@@ -81,8 +99,8 @@ void interruptHandler () {
 
 void setupTacho () {
     origTachoPinMode = getPinMode(TACHO_PIN);
-    pinMode (TACHO_PIN, INPUT);
-    pullUpDnControl (TACHO_PIN, PUD_UP);
+    pinMode(TACHO_PIN, INPUT);
+    pullUpDnControl(TACHO_PIN, PUD_UP);
     getRpmStartTime = time(NULL);
     wiringPiISR(TACHO_PIN, INT_EDGE_FALLING, interruptHandler);
     return;
@@ -110,8 +128,8 @@ void setFanRpm () {
         currTempDiffPct = (tempDiff/tempLimitDiffPct);
         rpm = (int) (currTempDiffPct*RPM_MAX)/100;
         rpm = rpm < RPM_MIN ? RPM_MIN : rpm > RPM_MAX ? RPM_MAX : rpm;
-        //printf("\e[30;38;5;139m » PWM-PIN › Temp: %d | TempDiff: %.1f% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
-        sd_journal_print(LOG_DEBUG, "PWM-PIN › Temp: %d | TempDiff: %.1f% | RPM: %d", currTemp, currTempDiffPct, rpm);
+        //printf("\e[30;38;5;139m » PWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
+        sd_journal_print(LOG_DEBUG, "PWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d", currTemp, currTempDiffPct, rpm);
     }
     setFanSpeed(PWM_PIN, rpm);
     return;
@@ -140,6 +158,7 @@ void cleanup () {
 int main (void)
 {
     signal(SIGINT, signalHandler);
+	initFanControl();
     initWiringPi();
     setupPwm();
     //setupTacho();
