@@ -28,20 +28,34 @@ int origTachoPinMode    = -1;
 float tempLimitDiffPct  = 0.0f;
 char thermalFilename[]  = "/sys/class/thermal/thermal_zone0/temp";
 const char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d "
-                          "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s\n";
+                          "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s";
 static volatile sig_atomic_t keepRunning = 1;
+
+void logConfParams () {
+    sd_journal_print(LOG_INFO, "Config file parameters loaded:");
+    sd_journal_print(LOG_INFO, "PWM_PIN=%d", PWM_PIN);
+    sd_journal_print(LOG_INFO, "TACHO_PIN=%d", TACHO_PIN);
+    sd_journal_print(LOG_INFO, "RPM_MAX=%d", RPM_MAX);
+    sd_journal_print(LOG_INFO, "RPM_MIN=%d", RPM_MIN);
+    sd_journal_print(LOG_INFO, "RPM_OFF=%d", RPM_OFF);
+    sd_journal_print(LOG_INFO, "TEMP_MAX=%d", TEMP_MAX);
+    sd_journal_print(LOG_INFO, "TEMP_LOW=%d", TEMP_LOW);
+    sd_journal_print(LOG_INFO, "WAIT=%d", WAIT);
+    sd_journal_print(LOG_INFO, "THERMAL_FILE=%s", thermalFilename);
+}
 
 void initFanControl () {
     /* Assign global vars with config file (if provided) values */
     FILE *confFile;
-    confFile = fopen("params.conf", "r");
+    confFile = fopen("/opt/gpio/fan/params.conf", "r");
     if (confFile != NULL ) {
         fscanf(confFile, confFormat, &PWM_PIN, &TACHO_PIN, &RPM_MAX, &RPM_MIN, \
                &RPM_OFF, &TEMP_MAX, &TEMP_LOW, &WAIT, thermalFilename);
-        /*printf(confFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, RPM_OFF, \
-               TEMP_MAX, TEMP_LOW, WAIT, thermalFilename);*/
+        logConfParams();
         fclose(confFile);
     }
+	else
+        sd_journal_print(LOG_WARNING, "params.conf not found - Default values loaded");
     /* Calculate values of global vars */
     tempLimitDiffPct = (float) (TEMP_MAX-TEMP_LOW)/100;
 }
@@ -150,8 +164,8 @@ void cleanup () {
     // TACHO pin cleanup
     //pullUpDnControl(TACHO_PIN, PUD_DOWN);
     //pinMode(TACHO_PIN, origTachoPinMode);
-    //printf("\e[30;38;5;74m » Cleaned up - Exiting ...\n\e[0m");
-    sd_journal_print(LOG_INFO, "» Cleaned up - Exiting ...");
+    //printf("\e[30;38;5;74mCleaned up - Exiting ...\n\e[0m");
+    sd_journal_print(LOG_INFO, "Cleaned up - Exiting ...");
     return;
 }
 
@@ -162,8 +176,8 @@ int main (void)
     initWiringPi();
     setupPwm();
     //setupTacho();
-    //printf("\e[30;38;5;74m » Initialized and running ...\n\e[0m");
-    sd_journal_print(LOG_INFO, "» Initialized and running ...");
+    //printf("\e[30;38;5;74mInitialized and running ...\n\e[0m");
+    sd_journal_print(LOG_INFO, "Initialized and running ...");
     while (keepRunning)	{
         setFanRpm();
         //getFanRpm();
