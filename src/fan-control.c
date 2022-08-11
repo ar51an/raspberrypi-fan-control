@@ -32,16 +32,10 @@ const char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF
 static volatile sig_atomic_t keepRunning = 1;
 
 void logConfParams () {
-    sd_journal_print(LOG_INFO, "Config file parameters loaded:");
-    sd_journal_print(LOG_INFO, "PWM_PIN=%d", PWM_PIN);
-    sd_journal_print(LOG_INFO, "TACHO_PIN=%d", TACHO_PIN);
-    sd_journal_print(LOG_INFO, "RPM_MAX=%d", RPM_MAX);
-    sd_journal_print(LOG_INFO, "RPM_MIN=%d", RPM_MIN);
-    sd_journal_print(LOG_INFO, "RPM_OFF=%d", RPM_OFF);
-    sd_journal_print(LOG_INFO, "TEMP_MAX=%d", TEMP_MAX);
-    sd_journal_print(LOG_INFO, "TEMP_LOW=%d", TEMP_LOW);
-    sd_journal_print(LOG_INFO, "WAIT=%d", WAIT);
-    sd_journal_print(LOG_INFO, "THERMAL_FILE=%s", thermalFilename);
+    char logFormat[] = "Config parameters loaded: PWM_PIN=%d | TACHO_PIN=%d | RPM_MAX=%d | RPM_MIN=%d "
+                       "| RPM_OFF=%d | TEMP_MAX=%d | TEMP_LOW=%d | WAIT=%d | THERMAL_FILE=%s";
+    sd_journal_print(LOG_INFO, logFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, \
+                     RPM_OFF, TEMP_MAX, TEMP_LOW, WAIT, thermalFilename);
 }
 
 void initFanControl () {
@@ -54,7 +48,7 @@ void initFanControl () {
         logConfParams();
         fclose(confFile);
     }
-	else
+    else
         sd_journal_print(LOG_WARNING, "params.conf not found - Default values loaded");
     /* Calculate values of global vars */
     tempLimitDiffPct = (float) (TEMP_MAX-TEMP_LOW)/100;
@@ -129,7 +123,8 @@ int getFanRpm () {
     rpm = (int) (frequency*60)/PULSE;
     getRpmStartTime =  time(NULL);
     intCount = 0;
-    //printf("\e[30;38;5;67m » TACHO-PIN › Frequency: %.1fHz | RPM: %d\n\e[0m", frequency, rpm);
+    //printf("\e[30;38;5;67mTACHO-PIN › Frequency: %.1fHz | RPM: %d\n\e[0m", frequency, rpm);
+    sd_journal_print(LOG_DEBUG, "TACHO-PIN › Frequency: %.1fHz | RPM: %d", frequency, rpm);
     return rpm;
 }
 
@@ -142,7 +137,7 @@ void setFanRpm () {
         currTempDiffPct = (tempDiff/tempLimitDiffPct);
         rpm = (int) (currTempDiffPct*RPM_MAX)/100;
         rpm = rpm < RPM_MIN ? RPM_MIN : rpm > RPM_MAX ? RPM_MAX : rpm;
-        //printf("\e[30;38;5;139m » PWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
+        //printf("\e[30;38;5;139mPWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
         sd_journal_print(LOG_DEBUG, "PWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d", currTemp, currTempDiffPct, rpm);
     }
     setFanSpeed(PWM_PIN, rpm);
