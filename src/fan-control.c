@@ -27,12 +27,10 @@ int origPwmPinMode      = -1;
 int origTachoPinMode    = -1;
 float tempLimitDiffPct  = 0.0f;
 char thermalFilename[]  = "/sys/class/thermal/thermal_zone0/temp";
-const char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d "
-                          "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s";
 static volatile sig_atomic_t keepRunning = 1;
 
 void logConfParams () {
-    char logFormat[] = "Config parameters loaded: PWM_PIN=%d | TACHO_PIN=%d | RPM_MAX=%d | RPM_MIN=%d "
+    char logFormat[] = "Config values loaded: PWM_PIN=%d | TACHO_PIN=%d | RPM_MAX=%d | RPM_MIN=%d "
                        "| RPM_OFF=%d | TEMP_MAX=%d | TEMP_LOW=%d | WAIT=%d | THERMAL_FILE=%s";
     sd_journal_print(LOG_INFO, logFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, \
                      RPM_OFF, TEMP_MAX, TEMP_LOW, WAIT, thermalFilename);
@@ -41,8 +39,11 @@ void logConfParams () {
 void initFanControl () {
     /* Assign global vars with config file (if provided) values */
     FILE *confFile;
-    confFile = fopen("/opt/gpio/fan/params.conf", "r");
+    char confFilename[]  = "/opt/gpio/fan/params.conf";
+    confFile = fopen(confFilename, "r");
     if (confFile != NULL ) {
+        char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d "
+                            "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s";
         fscanf(confFile, confFormat, &PWM_PIN, &TACHO_PIN, &RPM_MAX, &RPM_MIN, \
                &RPM_OFF, &TEMP_MAX, &TEMP_LOW, &WAIT, thermalFilename);
         logConfParams();
@@ -70,14 +71,11 @@ void setFanSpeed (int pin, int speed) {
 
 int getCurrTemp () {
     int currTemp = 0;
-    float currTempF = 0;
     FILE *thermalFile;
     thermalFile = fopen(thermalFilename, "r");
-    fscanf(thermalFile, "%f", &currTempF);
+    fscanf(thermalFile, "%d", &currTemp);
     fclose(thermalFile);
-    currTempF = currTempF/1000;
-    currTemp = (int) (currTempF + 0.5);
-    //printf("CurrTempF: %f, CurrTempI Rounded: %d\n", currTempF, currTemp);
+    currTemp = ((float) currTemp/1000) + 0.5;
     return currTemp;
 }
 
@@ -116,7 +114,7 @@ void setupTacho () {
 
 int getFanRpm () {
     int duration = 0;
-    float frequency = 0;
+    float frequency = 0.0f;
     int rpm = RPM_OFF;
     duration = (time(NULL)-getRpmStartTime);
     frequency = (intCount/duration);
@@ -130,7 +128,7 @@ int getFanRpm () {
 
 void setFanRpm () {
     int rpm = RPM_OFF;
-    float currTempDiffPct = 0;
+    float currTempDiffPct = 0.0f;
     int currTemp = getCurrTemp();
     int tempDiff = (currTemp-TEMP_LOW);
     if (tempDiff > 0) {
@@ -159,7 +157,6 @@ void cleanup () {
     // TACHO pin cleanup
     //pullUpDnControl(TACHO_PIN, PUD_DOWN);
     //pinMode(TACHO_PIN, origTachoPinMode);
-    //printf("\e[30;38;5;74mCleaned up - Exiting ...\n\e[0m");
     sd_journal_print(LOG_INFO, "Cleaned up - Exiting ...");
     return;
 }
@@ -171,7 +168,6 @@ int main (void)
     initWiringPi();
     setupPwm();
     //setupTacho();
-    //printf("\e[30;38;5;74mInitialized and running ...\n\e[0m");
     sd_journal_print(LOG_INFO, "Initialized and running ...");
     while (keepRunning)	{
         setFanRpm();
