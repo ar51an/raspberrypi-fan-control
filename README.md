@@ -132,7 +132,7 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
   |`Parameters`   |`Default`                              |`Info`                                       |
   |:--------------|:--------------------------------------|:--------------------------------------------|
   |`PWM_PIN`      |`18`                                   |HW PWM GPIO pins on RPi4B: 12, 13, 18, 19    |
-  |`TACHO_PIN`    |`23`                                   |Tacho functionality is disabled in code      |
+  |`TACHO_PIN`    |`23`                                   |Tacho pin, enable through TACHO_ENABLED      |
   |`RPM_MAX`      |`5000`                                 |Fan's max speed. Noctua Specs: Max=5000      |
   |`RPM_MIN`      |`1500`                                 |Fan's min speed. Noctua Specs: Min=1000      |
   |`RPM_OFF`      |`0`                                    |Fan off                                      |
