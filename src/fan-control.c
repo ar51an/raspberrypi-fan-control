@@ -20,9 +20,10 @@ int RPM_OFF             = 0;
 int TEMP_MAX            = 55;   // Above this temperature [FAN=ON At Max speed]
 int TEMP_LOW            = 40;   // Below this temperature [FAN=OFF]
 int WAIT                = 5000; // MilliSecs before adjusting RPM
-const int PULSE         = 2;    // TACHO_PIN Specific [Noctua fan puts out 2 pulses per revolution]
-volatile int intCount   = 0;    // TACHO_PIN Specific [Interrupt Counter]
-int getRpmStartTime     = 0;    // TACHO_PIN Specific
+int TACHO_ENABLED       = 0;    // TACHO Specific [Enable Tacho: 0=Disable 1=Enable]
+const int PULSE         = 2;    // TACHO Specific [Noctua fan puts out 2 pulses per revolution]
+volatile int intCount   = 0;    // TACHO Specific [Interrupt Counter]
+int getRpmStartTime     = 0;    // TACHO Specific
 int origPwmPinMode      = -1;
 int origTachoPinMode    = -1;
 float tempLimitDiffPct  = 0.0f;
@@ -30,10 +31,10 @@ char thermalFilename[]  = "/sys/class/thermal/thermal_zone0/temp";
 static volatile sig_atomic_t keepRunning = 1;
 
 void logConfParams () {
-    char logFormat[] = "Config values loaded: PWM_PIN=%d | TACHO_PIN=%d | RPM_MAX=%d | RPM_MIN=%d "
-                       "| RPM_OFF=%d | TEMP_MAX=%d | TEMP_LOW=%d | WAIT=%d | THERMAL_FILE=%s";
-    sd_journal_print(LOG_INFO, logFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, \
-                     RPM_OFF, TEMP_MAX, TEMP_LOW, WAIT, thermalFilename);
+    char logFormat[] = "Config values loaded: PWM_PIN=%d | TACHO_PIN=%d | RPM_MAX=%d | RPM_MIN=%d | RPM_OFF=%d "
+                       "| TEMP_MAX=%d | TEMP_LOW=%d | WAIT=%d | TACHO_ENABLED=%d | THERMAL_FILE=%s";
+    sd_journal_print(LOG_INFO, logFormat, PWM_PIN, TACHO_PIN, RPM_MAX, RPM_MIN, RPM_OFF, \
+                     TEMP_MAX, TEMP_LOW, WAIT, TACHO_ENABLED, thermalFilename);
 }
 
 void initFanControl () {
@@ -41,11 +42,11 @@ void initFanControl () {
     FILE *confFile;
     char confFilename[]  = "/opt/gpio/fan/params.conf";
     confFile = fopen(confFilename, "r");
-    if (confFile != NULL ) {
-        char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d "
-                            "TEMP_MAX=%d TEMP_LOW=%d WAIT=%d THERMAL_FILE=%s";
-        fscanf(confFile, confFormat, &PWM_PIN, &TACHO_PIN, &RPM_MAX, &RPM_MIN, \
-               &RPM_OFF, &TEMP_MAX, &TEMP_LOW, &WAIT, thermalFilename);
+    if (confFile != NULL) {
+        char confFormat[] = "PWM_PIN=%d TACHO_PIN=%d RPM_MAX=%d RPM_MIN=%d RPM_OFF=%d TEMP_MAX=%d "
+                            "TEMP_LOW=%d WAIT=%d TACHO_ENABLED=%d THERMAL_FILE=%s";
+        fscanf(confFile, confFormat, &PWM_PIN, &TACHO_PIN, &RPM_MAX, &RPM_MIN, &RPM_OFF, \
+               &TEMP_MAX, &TEMP_LOW, &WAIT, &TACHO_ENABLED, thermalFilename);
         logConfParams();
         fclose(confFile);
     }
@@ -53,6 +54,7 @@ void initFanControl () {
         sd_journal_print(LOG_WARNING, "params.conf not found - Default values loaded");
     /* Calculate values of global vars */
     tempLimitDiffPct = (float) (TEMP_MAX-TEMP_LOW)/100;
+    if (TACHO_ENABLED && TACHO_ENABLED != 1) TACHO_ENABLED = 0;
 }
 
 void initWiringPi () {
@@ -93,7 +95,7 @@ void setupPwm () {
     pwmSetClock(pwmClock);
     pwmSetRange(RPM_MAX);          // Set PWM range to Max RPM
     setFanSpeed(PWM_PIN, RPM_OFF); // Set Fan speed to 0 initially
-    //printf("PWM_PIN_ORIG » Num:Mode » %d:%d\n", PWM_PIN, origPwmPinMode);
+    //printf("[PWM] GPIO:Mode | %d:%d\n", PWM_PIN, origPwmPinMode);
     return;
 }
 
@@ -112,22 +114,23 @@ void setupTacho () {
     return;
 }
 
-int getFanRpm () {
+void getFanRpm () {
     int duration = 0;
     float frequency = 0.0f;
     int rpm = RPM_OFF;
     duration = (time(NULL)-getRpmStartTime);
     frequency = (intCount/duration);
     rpm = (int) (frequency*60)/PULSE;
-    getRpmStartTime =  time(NULL);
+    getRpmStartTime = time(NULL);
     intCount = 0;
-    //printf("\e[30;38;5;67mTACHO-PIN › Frequency: %.1fHz | RPM: %d\n\e[0m", frequency, rpm);
-    sd_journal_print(LOG_DEBUG, "TACHO-PIN › Frequency: %.1fHz | RPM: %d", frequency, rpm);
-    return rpm;
+    //if (rpm) printf("\e[30;38;5;67m[TACHO] Frequency: %.1fHz | RPM: %d\n\e[0m", frequency, rpm);
+    if (rpm) sd_journal_print(LOG_DEBUG, "[TACHO] Frequency: %.1fHz | RPM: %d", frequency, rpm);
+    return;
 }
 
 void setFanRpm () {
     int rpm = RPM_OFF;
+    static int lastRpm = 0;
     float currTempDiffPct = 0.0f;
     int currTemp = getCurrTemp();
     int tempDiff = (currTemp-TEMP_LOW);
@@ -135,10 +138,22 @@ void setFanRpm () {
         currTempDiffPct = (tempDiff/tempLimitDiffPct);
         rpm = (int) (currTempDiffPct*RPM_MAX)/100;
         rpm = rpm < RPM_MIN ? RPM_MIN : rpm > RPM_MAX ? RPM_MAX : rpm;
-        //printf("\e[30;38;5;139mPWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
-        sd_journal_print(LOG_DEBUG, "PWM-PIN › Temp: %d | TempDiff: %.1f%% | RPM: %d", currTemp, currTempDiffPct, rpm);
+        //printf("\e[30;38;5;139m[PWM] Temp: %d | TempDiff: %.1f%% | RPM: %d\n\e[0m", currTemp, currTempDiffPct, rpm);
+        sd_journal_print(LOG_DEBUG, "[PWM] Temp: %d | TempDiff: %.1f%% | RPM: %d", currTemp, currTempDiffPct, rpm);
     }
-    setFanSpeed(PWM_PIN, rpm);
+    if (lastRpm != rpm) setFanSpeed(PWM_PIN, rpm);
+    lastRpm = rpm;
+    return;
+}
+
+void start () {
+    if (TACHO_ENABLED) {
+        setupTacho();
+        while (keepRunning) { setFanRpm(); getFanRpm(); delay(WAIT); }
+    }
+    else {
+        while (keepRunning) { setFanRpm(); delay(WAIT); }
+    }
     return;
 }
 
@@ -155,8 +170,8 @@ void cleanup () {
     pinMode(PWM_PIN, origPwmPinMode);
     //pullUpDnControl(PWM_PIN, PUD_DOWN);
     // TACHO pin cleanup
+    if (TACHO_ENABLED) pinMode(TACHO_PIN, origTachoPinMode);
     //pullUpDnControl(TACHO_PIN, PUD_DOWN);
-    //pinMode(TACHO_PIN, origTachoPinMode);
     sd_journal_print(LOG_INFO, "Cleaned up - Exiting ...");
     return;
 }
@@ -167,13 +182,8 @@ int main (void)
     initFanControl();
     initWiringPi();
     setupPwm();
-    //setupTacho();
     sd_journal_print(LOG_INFO, "Initialized and running ...");
-    while (keepRunning)	{
-        setFanRpm();
-        //getFanRpm();
-        delay(WAIT);
-    }
+    start();
     cleanup();
     return 0;
 }
