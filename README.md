@@ -20,6 +20,11 @@
 Service to adjust RP4 PWM (Pulse Width Modulation) fan speed automatically based on CPU temperature. It will help in reducing fan noise and power consumption. It is written in C. **Main objective is to keep it fast and use minimum CPU and memory resources**.
 <br/>
 
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/11185794/202808642-ba7d83c2-aec5-4079-92e5-48765c693dc3.png?raw=true" alt="resource-usage"/>
+</div>
+<br/>
+
 If you just want PWM fan On/Off based on CPU temperature. Connect fan's `PWM, ground and +5V wires` directly to the GPIO pins. Enable fan **either** from raspi-config **or** UI. Set the PWM pin and CPU temperature in the setup. Lowest temperature you can specify from setup is 60°C. This limit can be bypassed by editing `/boot/config.txt` manually. Search for `dtoverlay=gpio-fan` entry and change the `temp=60000` value to your desired temperature. Fan will start at the specified CPU temperature and it will stop 10°C below that. The downside is fan will run at full speed and bit noisy, specially if you are using an open RP4 case.
 <br/>
 
@@ -143,9 +148,6 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
   |`THERMAL_FILE` |`/sys/class/thermal/thermal_zone0/temp`|Path to RP4 thermal file                     |
 
 * ***The 5V pins on RP4 i.e., physical pin 2 and 4 are not GPIO. They are connected to the 5V power supply and are always on.*** Those cannot be turned off without some form of circuit using mosfet or transistor. The point is if you run `shutdown command` from a shell or UI the fan will keep on running at full speed unless you unplug the RP4. My RP4 runs 24x7, a shell reboot once in a while and unplugged if a shutdown is really necessary.
-
-* Memory & CPU Usage:  
-  ![resource-usage](https://user-images.githubusercontent.com/11185794/202370622-669ccbcd-3e67-4fca-88ee-d76b07738620.png)
 
 #
 ### Build
