@@ -70,7 +70,7 @@ I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 2 y
   |Green RPM Signal|Physical Pin 16|
 
   Fan's PWM signal wire is connected to the RP4 `Physical/Board pin 12 - GPIO/BCM pin 18`. This fan-control code uses GPIO 18 as default. There are 4 pins on RP4 that support hardware PWM `GPIO 12/13/18/19`. If you are going to use a different GPIO pin make sure you change the `PWM_PIN` in `params.conf` with the one you use.  
-The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fan's RPM signal wire to the RP4 `Physical/Board pin 16 - GPIO/BCM pin 23`. By default, tacho output is disabled in the fan-control. (refer to `Points to Note`)
+The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fan's RPM signal wire to the RP4 `Physical/Board pin 16 - GPIO/BCM pin 23`. By default, tacho output is disabled in `params.conf`. (refer to `Points to Note`)
 
 #
 ### Steps
