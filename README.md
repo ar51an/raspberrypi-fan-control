@@ -74,20 +74,12 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
 #
 ### Steps
-#### ⮞ Install Packages
+#### ⮞ Install WiringPi
 * Install `WiringPi C` library. You can download it from [WiringPi](https://github.com/WiringPi/WiringPi). Installation instructions are available at [Install](https://github.com/WiringPi/WiringPi/blob/master/INSTALL).
 
   > **Quick Reference:**  
   > Unzip `sudo unzip -o WiringPi-master.zip -d WiringPi`  
   > Build and Install `sudo ./build`  
-
-* Install `libsystemd-dev`, systemd dev package. It is needed if you are planning to build fan-control source code. Fan-control logs to the journal at startup and exit. It also logs periodically when fan is on. You can change `log level` to `MaxLevelStore=info` in `journald.conf` to reduce logging. If you **do not** want journal logging at all from fan-control service you can skip `libsystemd-dev` package installation and remove journal logging from code, explained in the `Build` section below.
-
-  > **Install Package:**  
-  > `sudo apt install libsystemd-dev`  
-  
-  > **Check Journal Logs:**  
-  > `sudo journalctl -u fan-control`  
 
 #### ⮞ Install FanControl
 * Create folder `/opt/gpio/fan`. Copy `fan-control` and `params.conf` from the latest release under `build` folder to this newly created folder `/opt/gpio/fan`. Make sure both files are under the ownership of root and `fan-control` is executable. **Fan-control will work with default values without `params.conf`.**
@@ -116,6 +108,9 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
   > **Check Service Status:**  
   > `sudo systemctl status fan-control`  
+
+  > **Check Journal Logs:**  
+  > `sudo journalctl -u fan-control`  
 
   > **_NOTE:_**  
   > Default service starts fan-control early in the boot process. It works fine with `lite RaspiOS`. In case any issue or warning with fan-control startup at boot, you can modify the service to start late in the boot process. Edit `fan-control.service`. Uncomment `After=multi-user.target` and `WantedBy=multi-user.target`. Comment out `WantedBy=sysinit.target`. Save and reboot.
@@ -149,8 +144,14 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
 * ***The 5V pins on RP4 i.e., physical pin 2 and 4 are not GPIO. They are connected to the 5V power supply and are always on.*** Those cannot be turned off without some form of circuit using mosfet or transistor. The point is if you run `shutdown command` from a shell or UI the fan will keep on running at full speed unless you unplug the RP4. My RP4 runs 24x7, a shell reboot once in a while and unplugged if a shutdown is really necessary.
 
+* Fan-control logs to the journal at startup and exit. It also logs periodically when fan is on. You can change `log level` to `MaxLevelStore=info` in `journald.conf` to reduce logging.
+
 #
 ### Build
+* Install `libsystemd-dev`. It is required if you are going to build fan-control source code.  If you **do not** want journal logging at all from fan-control service you can skip `libsystemd-dev` package installation and remove journal logging from code, explained below.  
+  > **Install Package:**  
+  > `sudo apt install libsystemd-dev`  
+
 * Binary is available in the release. If for any reason you want to rebuild.  
   > **Build command:**  
   > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lwiringPi -lsystemd`  
