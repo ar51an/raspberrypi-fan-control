@@ -1,4 +1,4 @@
-## RP4 PWM Fan Controller
+## Raspberry Pi Fan Control
 <div align="center">
 
 ![fancontrol](https://img.shields.io/badge/-fan‑control-D8BFD8?logo=katana&logoColor=3a3a3d)
