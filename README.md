@@ -149,13 +149,13 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
 #
 ### Build
-* Install `libsystemd-dev`. It is required if you are going to build fan-control source code.  If you **do not** want journal logging at all from fan-control service you can skip `libsystemd-dev` package installation and remove journal logging from code, explained below.  
+* Install `libsystemd-dev`. It is required if you are going to build fan-control source code.  If you **do not** want journal logging at all from fan-control service you can skip `libsystemd-dev` package installation and remove journal logging fr1om code, explained below.  
   > **Install Package:**  
   > `sudo apt install libsystemd-dev`  
 
 * Binary is available in the release. If for any reason you want to rebuild.  
   > **Build command:**  
-  > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lwiringPi -lsystemd`  
+  > `gcc -Wall -O2 fan-control.c -o fan-control -lsystemd -lpigpio`  
 
 * Test binary after build.  
   > **Run binary:**  
