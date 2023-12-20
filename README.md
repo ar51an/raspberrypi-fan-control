@@ -18,11 +18,11 @@
 <div align="justify">
   
 ### Intro
-Service to adjust RP4 PWM (Pulse Width Modulation) fan speed automatically based on CPU temperature. It will help in reducing fan noise and power consumption. It is written in C. **Main objective is to keep it fast and use minimum CPU and memory resources**.
+Raspberry Pi fan-control service to adjust PWM fan speed automatically based on CPU temperature. It will help in reducing fan noise and power consumption. It is written in C. **Main objective is to keep it fast and use minimum CPU and memory resources**.
 <br/>
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/11185794/202808642-ba7d83c2-aec5-4079-92e5-48765c693dc3.png?raw=true" alt="resource-usage"/>
+  <img src="https://github.com/ar51an/raspberrypi-fan-control/assets/11185794/c16ae27c-ea3b-46ad-9397-ea79e5471a84?raw=true" alt="resource-usage"/>
 </div>
 <br/>
 
