@@ -144,7 +144,7 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
   |`TACHO_ENABLED`|`0`                                    |Enable tacho, 0=Disable 1=Enable             |
   |`THERMAL_FILE` |`/sys/class/thermal/thermal_zone0/temp`|Path to RP4 thermal file                     |
 
-* ***The 5V pins on RP4 i.e., physical pin 2 and 4 are not GPIO. They are connected to the 5V power supply and are always on.*** Those cannot be turned off without some form of circuit using mosfet or transistor. The point is if you run `shutdown command` from a shell or UI the fan will keep on running at full speed unless you unplug the RP4. My RP4 runs 24x7, a shell reboot once in a while and unplugged if a shutdown is really necessary.
+* ***The 5V pins on RP4 i.e., physical pin 2 and 4 are not GPIO. They are connected to the 5V power supply and are always on.*** Those cannot be turned off without some form of circuit using mosfet or transistor. The point is if you run `shutdown command` from a shell or UI the fan will keep on running at full speed unless you unplug the RP4.
 
 * Fan-control logs to the journal at startup and exit. It also logs periodically when fan is on. You can change `log level` to `MaxLevelStore=info` in `journald.conf` to reduce logging.
 
