@@ -26,34 +26,35 @@ Service to adjust RP4 PWM (Pulse Width Modulation) fan speed automatically based
 </div>
 <br/>
 
-If you just want PWM fan On/Off based on CPU temperature. Connect fan's `PWM, ground and +5V wires` directly to the GPIO pins. Enable fan **either** from raspi-config **or** UI. Set the PWM pin and CPU temperature in the setup. Lowest temperature you can specify from setup is 60°C. This limit can be bypassed by editing `/boot/config.txt` manually. Search for `dtoverlay=gpio-fan` entry and change the `temp=60000` value to your desired temperature. Fan will start at the specified CPU temperature and it will stop 10°C below that. The downside is fan will run at full speed and bit noisy, specially if you are using an open RP4 case.
+If you just want PWM fan On/Off based on CPU temperature. Connect fan's `PWM, ground and +5V wires` directly to the GPIO pins. Enable fan **either** from raspi-config **or** UI. Set the PWM pin and CPU temperature in the setup. Lowest temperature limit of 60°C can be bypassed by editing `/boot/firmware/config.txt` manually. Find `dtoverlay=gpio-fan` entry and change the `temp=60000` to the desired temperature. Fan will start at the specified CPU temperature and it will stop 10°C below that. The downside is fan will run at full speed and bit noisy, specially if you are using an open RP4 case.
 <br/>
 
-This service is specifically written for `Noctua 5V PWM` fan and `Raspberry Pi 4`. It may work for other PWM fans and RP models. You should know the intended fan's specifications, like max / min `RPM` and `target frequency`. Adjust these values in code/config and rebuild the binary (if needed). Raspberry Pi crystal oscillator clock frequency on RPi4B is 54MHz and on all earlier models it is 19.2MHz. `WiringPi` function `pwmSetClock` requires a divisor of clock frequency to set the target frequency of fan. The process is well documented in the fan-control source code.
+This service is specifically written for `Noctua 5V PWM` fan and `Raspberry Pi 4`. It may work for other PWM fans and RP models. You should know the intended fan's specifications, like max / min `RPM` and `target frequency`. Adjust these values in code/config and rebuild the binary (if needed).
 <br/>
 
-I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 2 years without any issue, your mileage may vary. If your fan does not support PWM or you want to safeguard hardware **either** build your own circuit **or** buy a pre-built PCB with transistor and diode like [EZ RP Fan Controller](https://www.tindie.com/products/jeremycook/ez-fan2-tiny-raspberry-pi-fan-controller/).  
-***WARNING: I accept no responsibility if you damage your Raspberry Pi or fan.***
+I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 3 years without any issue, your mileage may vary. If your fan does not support PWM or you want to safeguard hardware **either** build your own circuit **or** buy a pre-built PCB with transistor and diode like [EZ RP Fan Controller](https://www.tindie.com/products/jeremycook/ez-fan2-tiny-raspberry-pi-fan-controller/).
+
+> `⚠️` **WARNING:** ***I accept no responsibility if you damage your Raspberry Pi or fan.***
+
 <br/>
 
 #### Specs:
-> |Noctua Fan           |HW                      |OS                           |WiringPi C Lib Ver|
-> |:--------------------|:-----------------------|:----------------------------|:-----------------|
-> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bullseye-arm64-lite`|`2.70`            |
+> |Noctua Fan           |HW                      |OS                           |pigpio C Lib Ver|
+> |:--------------------|:-----------------------|:----------------------------|:---------------|
+> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bookworm-arm64-lite`|`79`            |
 #
 
 ### Hardware Prep
 * The default noctua fan connector will not connect directly to GPIO header. You need to do some modifications. There are multiple options:  
   > **1 - Dupont Jumper Wires Male to Female:**  
-  > Noctua's existing wire is pretty long. Get short jumper wires somewhere between 2-4" long. Male part of jumper wire will connect to Noctua connector and Female part will connect to GPIO. This is what I used in the beginning for few months.
+  > Noctua's existing wire is pretty long. Get short jumper wires somewhere between 2-4" long. Male part of jumper wire will connect to Noctua connector and Female part will connect to GPIO. I used it for few months.
 
   > **2 - Dupont Female Pin Connectors 2.54mm Pitch:**  
-  > This is the one I am using now, as shown in the preview. It is the cleanest option. It could be the most expensive option if you do not have all the tools. You need dupont Female pin connectors, crimping tool, wire cutter/stripper, heat shrink tube/heat gun **or** dupont connector housing.  
-  > You can **either** buy connectors and housing kit **or** buy dupont connectors separately. Better options for dupont connectors are `Molex Crimp Terminals Series: 70058 Part No: 16020098` or `Harwin Series: M20 Part No: 1180042`. I used Molex connectors. For crimping I used IWISS `IWS-2820` crimping tool. Cover these connectors with **either** heat shrink tube (I used 3.00mm diameter tube) **or** dupont connector housing.  
-  > If you go with this route. You have to cut the noctua fan wire to the required length. **Make sure you calculate required wire length properly before cutting**. If you cut it too short you will end up inserting wire joints. Strip wires (practice some stripping on the unused end). Attach dupont connectors to the stripped wires, crimp them with crimpping tool. Add heat shrink tubes to the connectors and shrink them with heatgun or attach connector housing.  
-
+  > It is the cleanest option, as shown in the preview. You need dupont Female pin connectors, crimping tool, wire cutter & stripper, heat-shrink-tube & heat-gun **or** dupont connector housing.  
+  > Better options for dupont connectors are `Molex Crimp Terminals Series: 70058 Part No: 16020098` or `Harwin Series: M20 Part No: 1180042`. I used Molex connectors and IWISS `IWS-2820` crimping tool. Cover these connectors with **either** heat shrink tube (3.00mm diameter tube) **or** dupont connector housing.  
+  
   > **3 - Use Wires from Old Fan:**  
-  > If you have some old fan laying around that has dupont connector wires and you have no plan of using it. Cut the wires from that fan, cut the Noctua connector and do some wire joining. Noctua fan comes with 4 OmniJoin adaptors, you can use them as well for joining wires.
+  > If you have some old unused fan laying around that has dupont connector wires. Cut the wires from that fan, cut the Noctua connector and do some wire joining. Noctua fan's OmniJoin adaptors can be used for joining wires.
 
 * Complete specification of Noctua fan is available at [Noctua Whitepaper](https://noctua.at/pub/media/wysiwyg/Noctua_PWM_specifications_white_paper.pdf). Details of Raspberry Pi GPIO pin layout is available at [GPIO Pinout](https://pinout.xyz/). Screenshots attached for quick reference.
 
@@ -70,19 +71,19 @@ I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 2 y
   |Blue PWM Signal |Physical Pin 12|
   |Green RPM Signal|Physical Pin 16|
 
-  Fan's PWM signal wire is connected to the RP4 `Physical/Board pin 12 - GPIO/BCM pin 18`. This fan-control code uses GPIO 18 as default. There are 4 pins on RP4 that support hardware PWM `GPIO 12/13/18/19`. If you are going to use a different GPIO pin make sure you change the `PWM_PIN` in `params.conf` with the one you use.  
-The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fan's RPM signal wire to the RP4 `Physical/Board pin 16 - GPIO/BCM pin 23`. By default, tacho output is disabled in `params.conf`. (refer to `Points to Note`)
+  Fan's PWM signal wire is connected to the RP4 `Physical pin 12 - GPIO pin 18`. This fan-control code uses GPIO 18 as default. There are 4 pins on RP4 that support hardware PWM `GPIO 12/13/18/19`. If you are going to use a different GPIO pin make sure you change the `PWM_PIN` in `params.conf` with the one you use.  
+The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fan's RPM signal wire to the RP4 `Physical pin 16 - GPIO pin 23`. By default, tacho output is disabled in `params.conf`. (refer to `Points to Note`)
 
 #
 ### Steps
-#### ⮞ Install WiringPi
-* Install `WiringPi C` library. You can download it from [WiringPi](https://github.com/WiringPi/WiringPi). Installation instructions are available at [Install](https://github.com/WiringPi/WiringPi/blob/master/INSTALL).
+#### ❯ Install pigpio
+* Install `pigpio C` library. You can download it from [pigpio](https://codeload.github.com/joan2937/pigpio/zip/refs/heads/master).
 
-  > **Quick Reference:**  
-  > Unzip `sudo unzip -o WiringPi-master.zip -d WiringPi`  
-  > Build and Install `sudo ./build`  
+  > `unzip -o pigpio-master.zip`  
+  > `make`  
+  > `sudo make install`  
 
-#### ⮞ Install FanControl
+#### ❯ Install FanControl
 * Create folder `/opt/gpio/fan`. Copy `fan-control` and `params.conf` from the latest release under `build` folder to this newly created folder `/opt/gpio/fan`. Make sure both files are under the ownership of root and `fan-control` is executable. **Fan-control will work with default values without `params.conf`.**
 
   > **Create folder:**  
@@ -113,7 +114,7 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
   > **Check Journal Logs:**  
   > `sudo journalctl -u fan-control`  
 
-  > **_NOTE:_**  
+  > `ℹ️` **Note:**  
   > Default service starts fan-control early in the boot process. It works fine with `lite RaspiOS`. In case any issue or warning with fan-control startup at boot, you can modify the service to start late in the boot process. Edit `fan-control.service`. Uncomment `After=multi-user.target` and `WantedBy=multi-user.target`. Comment out `WantedBy=sysinit.target`. Save and reboot.
 
 #
@@ -149,20 +150,9 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
 #
 ### Build
-* Install `libsystemd-dev`. It is required if you are going to build fan-control source code.  If you **do not** want journal logging at all from fan-control service you can skip `libsystemd-dev` package installation and remove journal logging from code, explained below.  
-  > **Install Package:**  
+* Install `libsystemd-dev`. It is required for compiling fan-control source code.  
   > `sudo apt install libsystemd-dev`  
 
-* Binary is available in the release. If for any reason you want to rebuild.  
-  > **Build command:**  
-  > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lwiringPi -lsystemd`  
-
-* Test binary after build.  
-  > **Run binary:**  
-  > `sudo ./fan-control`  
-  >  Ctrl+C to exit  
-
-* If you are not interested in journal logging. Comment out the include header `sd-journal.h` and journal logging lines starting with `sd_journal_print`  
-  > **Build command without journal logging:**  
-  > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lwiringPi`  
+* Binary is available in the release. If for any reason you want to recompile.  
+  > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lpigpio -lsystemd`  
 </div>
