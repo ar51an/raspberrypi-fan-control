@@ -1,6 +1,6 @@
 /*
  * PWM Fan Controller:
- *   PWM fan controller is developed using WiringPi C library for RPi4. It is
+ *   PWM fan controller is developed using pigpio C library for RPi4. It is
  *   intended for "Noctua NF-A4x10 5V PWM" fan, it may work for any PWM fan
  *   with slight adjustment according to the fan specs.
  *   Copyright (c) 2021 - ar51an
@@ -9,21 +9,22 @@
 #include <stdio.h>
 #include <time.h>
 #include <signal.h>
-#include <wiringPi.h>
+#include <pigpio.h>
 #include <systemd/sd-journal.h>
 
-int PWM_PIN             = 18;   // HW PWM works at GPIO [12, 13, 18 & 19] on RPi4B
+int PWM_PIN             = 18;    // HW PWM works at GPIO [12, 13, 18 & 19] on RPi4B
 int TACHO_PIN           = 23;
-int RPM_MAX             = 5000; // Noctua Specs: Max=5000
-int RPM_MIN             = 1500; // Noctua Specs: Min=1000 [Kept 1500 as Min]
+int FREQUENCY           = 25000; // Noctua Specs: Target_Frequency=25kHz
+int RPM_MAX             = 5000;  // Noctua Specs: Max=5000
+int RPM_MIN             = 1500;  // Noctua Specs: Min=1000 [Kept 1500 as Min]
 int RPM_OFF             = 0;
-int TEMP_MAX            = 55;   // Above this temperature [FAN=ON At Max speed]
-int TEMP_LOW            = 40;   // Below this temperature [FAN=OFF]
-int WAIT                = 5000; // MilliSecs before adjusting RPM
-int TACHO_ENABLED       = 0;    // TACHO Specific [Enable Tacho: 0=Disable 1=Enable]
-const int PULSE         = 2;    // TACHO Specific [Noctua fan puts out 2 pulses per revolution]
-volatile int intCount   = 0;    // TACHO Specific [Interrupt Counter]
-int getRpmStartTime     = 0;    // TACHO Specific
+int TEMP_MAX            = 55;    // Above this temperature [FAN=ON At Max speed]
+int TEMP_LOW            = 40;    // Below this temperature [FAN=OFF]
+int WAIT                = 5000;  // Milliseconds before adjusting RPM
+int TACHO_ENABLED       = 0;     // TACHO Specific [Enable Tacho: 0=Disable 1=Enable]
+const int PULSE         = 2;     // TACHO Specific [Noctua fan puts out 2 pulses per revolution]
+volatile int intCount   = 0;     // TACHO Specific [Interrupt Counter]
+int getRpmStartTime     = 0;     // TACHO Specific
 int origPwmPinMode      = -1;
 int origTachoPinMode    = -1;
 float tempLimitDiffPct  = 0.0f;
@@ -57,18 +58,24 @@ void initFanControl () {
     if (TACHO_ENABLED && TACHO_ENABLED != 1) TACHO_ENABLED = 0;
 }
 
-void initWiringPi () {
-    /* Initialize wiringPi, calling 1 of 4 setup methods */
-    wiringPiSetupGpio(); // Defaults to GPIO/BCM pin numbers
+int initPigpio () {
+    int config = gpioCfgGetInternals();
+    config |= PI_CFG_NOSIGHANDLER;
+    gpioCfgSetInternals(config);
+    if (gpioInitialise() < 0) {
+        sd_journal_print(LOG_ERR, "pigpio initialization failed ...");
+        return -1;
+    }
+    return 0;
 }
 
 int getPinMode (int pin) {
     /* Mode Name Mapping: INPUT=0, OUTPUT=1, ALT0=4, ALT1=5, ALT2=6, ALT3=7, ALT4=3, ALT5=2 */
-    return getAlt(pin);
+    return gpioGetMode(pin);
 }
 
 void setFanSpeed (int pin, int speed) {
-    pwmWrite(pin, speed);
+    gpioPWM(pin, speed);
 }
 
 int getCurrTemp () {
@@ -77,24 +84,16 @@ int getCurrTemp () {
     thermalFile = fopen(thermalFilename, "r");
     fscanf(thermalFile, "%d", &currTemp);
     fclose(thermalFile);
-    currTemp = ((float) currTemp/1000) + 0.5;
+    currTemp = ((float) currTemp/1000)+0.5;
     return currTemp;
 }
 
 void setupPwm () {
-    /* Set pwm fan freq=25kHz (Noctua whitepaper stated as Intel's recommendation for PWM FANs)
-     * PWM crystal oscillator clock base frequency: RPI3=19.2MHz & RPI4=54MHz. pwmSetClock()
-     * takes a divisor of base fequency: "19200000/768=25kHz". It adjusts the divisor for RPI4
-     * 54MHz in the code itself as "divisor=540*divisor/192"
-     */
-    int pwmClock = 768;
     origPwmPinMode = getPinMode(PWM_PIN);
-    pinMode(PWM_PIN, PWM_OUTPUT);
-    // Using default balanced mode instead of mark:space mode
-    //pwmSetMode(PWM_MODE_MS);
-    pwmSetClock(pwmClock);
-    pwmSetRange(RPM_MAX);          // Set PWM range to Max RPM
-    setFanSpeed(PWM_PIN, RPM_OFF); // Set Fan speed to 0 initially
+    gpioSetMode(PWM_PIN, PI_OUTPUT);
+    gpioSetPWMfrequency(PWM_PIN, FREQUENCY);
+    gpioSetPWMrange(PWM_PIN, RPM_MAX);          // Set PWM range to Max RPM
+    setFanSpeed(PWM_PIN, RPM_OFF);              // Set Fan speed to 0 initially
     //printf("[PWM] GPIO:Mode | %d:%d\n", PWM_PIN, origPwmPinMode);
     return;
 }
@@ -107,10 +106,10 @@ void interruptHandler () {
 
 void setupTacho () {
     origTachoPinMode = getPinMode(TACHO_PIN);
-    pinMode(TACHO_PIN, INPUT);
-    pullUpDnControl(TACHO_PIN, PUD_UP);
+    gpioSetMode(TACHO_PIN, PI_INPUT);
+    gpioSetPullUpDown(TACHO_PIN, PI_PUD_UP);
     getRpmStartTime = time(NULL);
-    wiringPiISR(TACHO_PIN, INT_EDGE_FALLING, interruptHandler);
+    gpioSetISRFunc(TACHO_PIN, FALLING_EDGE, 0, interruptHandler);
     return;
 }
 
@@ -146,6 +145,15 @@ void setFanRpm () {
     return;
 }
 
+void delay (unsigned int waitMillisec)
+{
+    const int msInSec = 1000;
+    struct timespec sleepInterval;
+    sleepInterval.tv_sec  = (time_t) (waitMillisec/msInSec);
+    sleepInterval.tv_nsec = (long) (waitMillisec%msInSec)*1000000L;
+    nanosleep (&sleepInterval, NULL);
+}
+
 void start () {
     if (TACHO_ENABLED) {
         setupTacho();
@@ -167,11 +175,12 @@ static void signalHandler (int _) {
 void cleanup () {
     // PWM pin cleanup
     setFanSpeed(PWM_PIN, RPM_OFF);
-    pinMode(PWM_PIN, origPwmPinMode);
-    //pullUpDnControl(PWM_PIN, PUD_DOWN);
+    gpioSetMode(PWM_PIN, origPwmPinMode);
+    //gpioSetPullUpDown(PWM_PIN, PUD_DOWN);
     // TACHO pin cleanup
-    if (TACHO_ENABLED) pinMode(TACHO_PIN, origTachoPinMode);
-    //pullUpDnControl(TACHO_PIN, PUD_DOWN);
+    if (TACHO_ENABLED) gpioSetMode(TACHO_PIN, origTachoPinMode);
+    //gpioSetPullUpDown(TACHO_PIN, PUD_DOWN);
+    gpioTerminate();
     sd_journal_print(LOG_INFO, "Cleaned up - Exiting ...");
     return;
 }
@@ -180,7 +189,7 @@ int main (void)
 {
     signal(SIGINT, signalHandler);
     initFanControl();
-    initWiringPi();
+    if (initPigpio() < 0) return 1;
     setupPwm();
     sd_journal_print(LOG_INFO, "Initialized and running ...");
     start();
