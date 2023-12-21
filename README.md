@@ -32,11 +32,8 @@ If you just want PWM fan On/Off based on CPU temperature. Connect fan's `PWM, gr
 This service is specifically written for `Noctua 5V PWM` fan and `Raspberry Pi 4`. It may work for other PWM fans and RP models. You should know the intended fan's specifications, like max / min `RPM` and `target frequency`. Adjust these values in code/config and rebuild the binary (if needed).
 <br/>
 
-I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 3 years without any issue, your mileage may vary. If your fan does not support PWM or you want to safeguard hardware **either** build your own circuit **or** buy a pre-built PCB with transistor and diode like [EZ RP Fan Controller](https://www.tindie.com/products/jeremycook/ez-fan2-tiny-raspberry-pi-fan-controller/).
-
+I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 3 years without any issue, your mileage may vary. If your fan does not support PWM or you want to safeguard hardware **either** build your own circuit **or** buy a pre-built PCB with transistor and diode like [EZ RP Fan Controller](https://www.tindie.com/products/jeremycook/ez-fan2-tiny-raspberry-pi-fan-controller/).  
 > `⚠️` **WARNING:** ***I accept no responsibility if you damage your Raspberry Pi or fan.***
-
-<br/>
 
 #### Specs:
 > |Noctua Fan           |HW                      |OS                           |pigpio C Lib Ver|
