@@ -36,9 +36,9 @@ I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 3 y
 > `⚠️` **WARNING:** ***I accept no responsibility if you damage your Raspberry Pi or fan.***
 
 #### Specs:
-> |Noctua Fan           |HW                      |OS                           |pigpio C Lib Ver|
-> |:--------------------|:-----------------------|:----------------------------|:---------------|
-> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bookworm-arm64-lite`|`79`            |
+> |Noctua Fan           |HW                      |OS                           |WiringPi C Lib Ver|pigpio C Lib Ver|
+> |:--------------------|:-----------------------|:----------------------------|:-----------------|:---------------|
+> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bookworm-arm64-lite`|`3.1`             |`79`            |
 #
 
 ### Hardware Prep
