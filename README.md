@@ -78,12 +78,12 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 #### ❯ Install C Library
 
 * **WiringPi**  
-  Install `WiringPi C` library. You can download it from [WiringPi](https://github.com/WiringPi/WiringPi/releases/download/3.1/wiringpi_3.1_arm64.deb).
+  Install `WiringPi C` library. You can download it from [WiringPi](https://github.com/WiringPi/WiringPi/releases/download/3.1/wiringpi_3.1_arm64.deb)
 
   > `sudo dpkg -i wiringpi_3.1_arm64.deb`  
 
 * **Pigpio**  
-  Install `pigpio C` library. You can download it from [pigpio](https://codeload.github.com/joan2937/pigpio/zip/refs/heads/master).
+  Install `pigpio C` library. You can download it from [pigpio](https://codeload.github.com/joan2937/pigpio/zip/refs/heads/master)
 
   > `unzip -o pigpio-master.zip`  
   > `make`  
