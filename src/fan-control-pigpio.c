@@ -151,7 +151,7 @@ void delay (unsigned int waitMillisec)
     struct timespec sleepInterval;
     sleepInterval.tv_sec  = (time_t) (waitMillisec/msInSec);
     sleepInterval.tv_nsec = (long) (waitMillisec%msInSec)*1000000L;
-    nanosleep (&sleepInterval, NULL);
+    nanosleep(&sleepInterval, NULL);
 }
 
 void start () {
@@ -166,10 +166,9 @@ void start () {
 }
 
 static void signalHandler (int _) {
-    // Exit controller on Ctrl+C
+    // Exit controller
     (void)_;
     keepRunning = 0;
-    //printf("\r");
 }
 
 void cleanup () {
@@ -187,7 +186,9 @@ void cleanup () {
 
 int main (void)
 {
-    signal(SIGINT, signalHandler);
+    struct sigaction act = {0};
+    act.sa_handler = signalHandler;
+    sigaction(SIGTERM, &act, NULL);
     initFanControl();
     if (initPigpio() < 0) return 1;
     setupPwm();
