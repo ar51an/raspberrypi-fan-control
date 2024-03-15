@@ -22,7 +22,7 @@ Raspberry Pi fan-control service to adjust PWM fan speed automatically based on 
 <br/>
 
 <div align="center">
-  <img src="https://github.com/ar51an/raspberrypi-fan-control/assets/11185794/c16ae27c-ea3b-46ad-9397-ea79e5471a84?raw=true" alt="resource-usage"/>
+  <img src="https://github.com/ar51an/temp/assets/11185794/964e5520-89ff-44f1-ab09-0eddf0d11706?raw=true" alt="resource-usage"/>
 </div>
 <br/>
 
@@ -36,9 +36,9 @@ I connected Noctua fan wires directly to the RP4 GPIO pins. It's been almost 3 y
 > `⚠️` **WARNING:** ***I accept no responsibility if you damage your Raspberry Pi or fan.***
 
 #### Specs:
-> |Noctua Fan           |HW                      |OS                           |pigpio C Lib Ver|
-> |:--------------------|:-----------------------|:----------------------------|:---------------|
-> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bookworm-arm64-lite`|`79`            |
+> |Noctua Fan           |HW                      |OS                           |WiringPi|pigpio|
+> |:--------------------|:-----------------------|:----------------------------|:-------|:-----|
+> |`NF-A4x10 5V PWM Fan`|`Raspberry Pi 4 Model B`|`raspios-bookworm-arm64-lite`|`3.1`   |`79`  |
 #
 
 ### Hardware Prep
@@ -73,15 +73,30 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
 #
 ### Steps
-#### ❯ Install pigpio
-* Install `pigpio C` library. You can download it from [pigpio](https://codeload.github.com/joan2937/pigpio/zip/refs/heads/master).
+#### ❯ Install C Library
+* Install **either** `WiringPi` **or** `pigpio` C library.
 
-  > `unzip -o pigpio-master.zip`  
-  > `make`  
-  > `sudo make install`  
+  * **WiringPi**  
+    [Download](https://github.com/WiringPi/WiringPi/releases/download/3.1/wiringpi_3.1_arm64.deb) and install `WiringPi` C library.
+    > Install:  
+    > `sudo dpkg -i wiringpi_3.1_arm64.deb`  
+
+    > `ℹ️` **Note:**  
+      > WiringPi has been revived. Latest release supports RasberryPi OS Bookworm. Check the github [repo](https://github.com/WiringPi/WiringPi) for updates.
+
+  * **Pigpio**  
+    [Download](https://codeload.github.com/joan2937/pigpio/zip/refs/heads/master) and install `pigpio` C library.
+    > Install:  
+    > `unzip -o pigpio-master.zip`  
+    > `make`  
+    > `sudo make install`
+
+    > `ℹ️` **Note:**  
+      > Uninstall Pigpio:  
+      > If pigpio was installed using the previous step, manually remove all files under `/usr/local/*` mentioned [here](https://abyz.me.uk/rpi/pigpio/faq.html#Library_update_fails). To remove the distro provided pigpio package run cmd `sudo apt --purge autoremove pigpio`  
 
 #### ❯ Install FanControl
-* Create folder `/opt/gpio/fan`. Copy `fan-control` and `params.conf` from the latest release under `build` folder to this newly created folder `/opt/gpio/fan`. Make sure both files are under the ownership of root and `fan-control` is executable. **Fan-control will work with default values without `params.conf`.**
+* Download the latest fan-control [release](https://github.com/ar51an/raspberrypi-fan-control/releases) for the library that was installed in the previous step. Create folder `/opt/gpio/fan`. Copy `fan-control` and `params.conf` from the latest release under `build` folder to this newly created folder `/opt/gpio/fan`. Make sure both files are under the ownership of root and `fan-control` is executable. **Fan-control will work with default values without `params.conf`.**
 
   > **Create folder:**  
   > `sudo mkdir -p /opt/gpio/fan/`  
@@ -110,9 +125,6 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
   > **Check Journal Logs:**  
   > `sudo journalctl -u fan-control`  
-
-  > `ℹ️` **Note:**  
-  > Default service starts fan-control early in the boot process. It works fine with `lite RaspiOS`. In case any issue or warning with fan-control startup at boot, you can modify the service to start late in the boot process. Edit `fan-control.service`. Uncomment `After=multi-user.target` and `WantedBy=multi-user.target`. Comment out `WantedBy=sysinit.target`. Save and reboot.
 
 #
 ### Points to Note
@@ -151,5 +163,8 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
   > `sudo apt install libsystemd-dev`  
 
 * Binary is available in the release. If for any reason you want to recompile.  
-  > `sudo gcc -Wall -O2 fan-control.c -o fan-control -lpigpio -lsystemd`  
+  > WiringPi:  
+  > `sudo gcc -Wall -O2 fan-control-wiringpi.c -o fan-control -lwiringPi -lsystemd`  
+  > Pigpio:  
+  > `sudo gcc -Wall -O2 fan-control-pigpio.c -o fan-control -lpigpio -lsystemd`  
 </div>
