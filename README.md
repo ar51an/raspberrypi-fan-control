@@ -89,7 +89,11 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
     > Install:  
     > `unzip -o pigpio-master.zip`  
     > `make`  
-    > `sudo make install`  
+    > `sudo make install`
+
+    > `ℹ️` **Note:**  
+      > Uninstall Pigpio:  
+      > If pigpio was installed using the previous step, manually remove all files under `/usr/local/*` mentioned [here](https://abyz.me.uk/rpi/pigpio/faq.html#Library_update_fails). To remove the distro provided pigpio package run cmd `sudo apt --purge autoremove pigpio`  
 
 #### ❯ Install FanControl
 * Download the latest fan-control [release](https://github.com/ar51an/raspberrypi-fan-control/releases) for the library that was installed in the previous step. Create folder `/opt/gpio/fan`. Copy `fan-control` and `params.conf` from the latest release under `build` folder to this newly created folder `/opt/gpio/fan`. Make sure both files are under the ownership of root and `fan-control` is executable. **Fan-control will work with default values without `params.conf`.**
@@ -121,9 +125,6 @@ The green tachometer wire on Noctua fan is used to calculate RPM. Connect the fa
 
   > **Check Journal Logs:**  
   > `sudo journalctl -u fan-control`  
-
-  > `ℹ️` **Note:**  
-  > Default service starts fan-control early in the boot process. It works fine with `lite RaspiOS`. In case any issue or warning with fan-control startup at boot, you can modify the service to start late in the boot process. Edit `fan-control.service`. Uncomment `After=multi-user.target` and `WantedBy=multi-user.target`. Comment out `WantedBy=sysinit.target`. Save and reboot.
 
 #
 ### Points to Note
