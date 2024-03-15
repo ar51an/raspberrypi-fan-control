@@ -22,7 +22,7 @@ Raspberry Pi fan-control service to adjust PWM fan speed automatically based on 
 <br/>
 
 <div align="center">
-  <img src="https://github.com/ar51an/temp/assets/11185794/a96d68e9-4e4d-41f9-b454-6736163a9430?raw=true" alt="resource-usage"/>
+  <img src="https://github.com/ar51an/temp/assets/11185794/964e5520-89ff-44f1-ab09-0eddf0d11706?raw=true" alt="resource-usage"/>
 </div>
 <br/>
 
